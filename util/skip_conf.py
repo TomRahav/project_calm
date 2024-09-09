@@ -48,6 +48,7 @@ def get_skip_mask(
     classifier: torch.nn.Linear = None,
     config: AutoConfig = None,
     pos_time: int = 1,
+    layer_index: int = 0,
     adapt_threshold: float = None,
     return_conf=False,
 ):
@@ -57,10 +58,12 @@ def get_skip_mask(
         key = config.exit_conf_type
         if config.exit_position_temp is not None:
             # decays the confidence threshold with decoding time stp.        
-            correct_by_pos = lambda i: config.exit_conf_threshold * np.exp(
+            correct_by_pos = lambda i,j : config.exit_conf_threshold * np.exp(
                 - config.exit_position_temp * i / config.max_answer_length
-            ) / 10 + 9 * config.exit_conf_threshold / 10
-            threshold = correct_by_pos(pos_time)
+            ) / 10 + config.exit_conf_threshold * np.exp(
+                - config.exit_layers_temp * j / config.num_layers
+            ) / 10 + 8 * config.exit_conf_threshold / 10
+            threshold = correct_by_pos(pos_time, layer_index)
         else:
             threshold = config.exit_conf_threshold
     elif config.shallow2deep_conf_type is not None:

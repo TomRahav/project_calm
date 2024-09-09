@@ -46,13 +46,20 @@ class AdditionalArguments:
         default=1., metadata={"help": ("Default threshold value for early-exit framework.")},
     )
     exit_position_temp: Optional[float] = field(
-        default=None, metadata={"help": ("Temperature value for decaying confidence threshold")},
+        default=1, metadata={"help": ("Temperature value for decaying confidence threshold")},
     )
     exit_min_layer: Optional[int] = field(
         default=None, metadata={"help": ("To address unstable text generation and training, exit after certain layers.")},
     )   
     train_meta_cm_head: Optional[bool] = field(
         default=False, metadata={"help": ("Train cm (confidence measure) head to align last hidden_states when exit_conf_type is set to meta.")}
+    )
+    # [tomr] added args
+    exit_layers_temp: Optional[float] = field(
+        default=1, metadata={"help": ("Temperature value for decaying layers confidence threshold")},
+    )
+    exit_decaying_layers: Optional[bool] = field(
+        default=False, metadata={"help": ("Flag to use the decaying layers lambda")},
     )
         
     # shallow-deep framework
