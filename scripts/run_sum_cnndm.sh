@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=4 \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python -m torch.distributed.run --nproc_per_node=7 \
     run_summarization.py \
     --model_name_or_path t5-large \
     --do_train \
@@ -14,7 +14,9 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=4 \
     --save_steps 5383 \
     --learning_rate 1e-4 \
     --num_train_epochs 3 \
-
+    --output_hidden_states_decoder True \
+    --intermediate_loss_fn weighted_ce \
+    
     # FREE
     # --output_hidden_states_decoder True \
     # --intermediate_loss_fn shallowdeep_kd_dyna \
@@ -23,8 +25,8 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=4 \
     # --do_layer_transformation False \
 
     # CALM
-    --output_hidden_states_decoder True \
-    --intermediate_loss_fn weighted_ce \
+    # --output_hidden_states_decoder True \
+    # --intermediate_loss_fn weighted_ce \
 
     # for t5-3b
     # --bf16 \
@@ -36,9 +38,9 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=4 \
     # --shallow_exit_layer 8 \ # for FREE
 
 
-CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=1 \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python -m torch.distributed.run --nproc_per_node=7 \
     run_summarization.py \
-    --model_name_or_path ./save/cnndm_t5_large/ \
+    --model_name_or_path t5-large \
     --do_eval \
     --dataset_name cnn_dailymail \
     --dataset_config_name "3.0.0" \
@@ -49,6 +51,10 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=1 \
     --overwrite_output_dir \
     --predict_with_generate \
     --source_prefix "summarize: " \
+    --use_early_exit True \
+    --exit_conf_type softmax \
+    --exit_conf_threshold 0.9 \
+    --exit_min_layer 4 \
 
     # FREE
     # --use_shallow_deep True \
@@ -58,10 +64,10 @@ CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=1 \
     # --use_adapt_threshold True \ # to use adaptive threshold
 
     # CALM
-    --use_early_exit True \
-    --exit_conf_type softmax \
-    --exit_conf_threshold 0.9 \
-    --exit_min_layer 4 \
+    # --use_early_exit True \
+    # --exit_conf_type softmax \
+    # --exit_conf_threshold 0.9 \
+    # --exit_min_layer 4 \
 
     # static-exiting
     # --static_exit_layer 6 \

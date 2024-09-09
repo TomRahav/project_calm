@@ -173,6 +173,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
             data_args.dataset_config_name,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
+            num_proc=data_args.preprocessing_num_workers,
         )
     else:
         data_files = {}
@@ -190,6 +191,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
             data_files=data_files,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
+            num_proc=data_args.preprocessing_num_workers,
         )
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
@@ -218,7 +220,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         additional_args,
         max_answer_length=data_args.max_target_length
     )
-    
+
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         cache_dir=model_args.cache_dir,
@@ -235,7 +237,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-        
+
     if additional_args.use_lora:
         if training_args.do_train:
             lora_config = LoraConfig(
@@ -352,7 +354,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
 
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
-        
+
     if training_args.do_train:
         train_dataset = raw_datasets["train"]
         if data_args.max_train_samples is not None:
@@ -426,7 +428,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         preds, labels = eval_preds
         if isinstance(preds, tuple):
             preds = preds[0]
-            
+
         try:
             decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
         except:
@@ -435,13 +437,13 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         if data_args.ignore_pad_token_for_loss:
             # Replace -100 in the labels as we can't decode them.
             labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-            
+
         try:
             decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
         except:
             decoded_labels = tokenizer.batch_decode(np.where(labels != -100, labels, tokenizer.pad_token_id), 
                                                     skip_special_tokens=True)
-        
+
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
