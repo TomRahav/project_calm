@@ -23,7 +23,7 @@ def meta_confidence(
 ):
     assert hidden_states is not None
     assert classifier is not None
-    
+
     preds = classifier(hidden_states)
     probs = torch.softmax(preds, dim=-1)
     return probs[..., 1].squeeze()
@@ -32,14 +32,14 @@ def meta_confidence(
 def get_confidence_class(key):
 
     _conf_class_map = {
-        'softmax': softmax_confidence,
-        'meta': meta_confidence,
+        "softmax": softmax_confidence,
+        "meta": meta_confidence,
     }
 
     if key in _conf_class_map:
         return _conf_class_map[key]
     else:
-        raise ValueError('Invalid confidence measure: {}'.format(key))
+        raise ValueError("Invalid confidence measure: {}".format(key))
 
 
 def get_skip_mask(
@@ -52,32 +52,43 @@ def get_skip_mask(
     adapt_threshold: float = None,
     return_conf=False,
 ):
-    assert config.exit_conf_type is not None or config.shallow2deep_conf_type is not None
-    
+    assert (
+        config.exit_conf_type is not None or config.shallow2deep_conf_type is not None
+    )
+
     if config.exit_conf_type is not None:
         key = config.exit_conf_type
         if config.exit_position_temp is not None:
-            # decays the confidence threshold with decoding time stp.        
-            correct_by_pos = lambda i,j : config.exit_conf_threshold * np.exp(
-                - config.exit_position_temp * i / config.max_answer_length
-            ) / 10 + config.exit_conf_threshold * np.exp(
-                - config.exit_layers_temp * j / config.num_layers
-            ) / 10 + 8 * config.exit_conf_threshold / 10
+            # decays the confidence threshold with decoding time stp.
+            correct_by_pos = (
+                lambda i, j: config.exit_conf_threshold
+                * np.exp(-config.exit_position_temp * i / config.max_answer_length)
+                / 10
+                + 3
+                * config.exit_conf_threshold
+                * np.exp(-config.exit_layers_temp * j / config.num_layers)
+                / 10
+                + 5 * config.exit_conf_threshold / 10
+            )
             threshold = correct_by_pos(pos_time, layer_index)
         else:
             threshold = config.exit_conf_threshold
     elif config.shallow2deep_conf_type is not None:
         key = config.shallow2deep_conf_type
-        threshold = config.shallow2deep_conf_threshold if adapt_threshold is None else adapt_threshold
+        threshold = (
+            config.shallow2deep_conf_threshold
+            if adapt_threshold is None
+            else adapt_threshold
+        )
 
-    conf_measure = get_confidence_class(key=key)    
+    conf_measure = get_confidence_class(key=key)
     conf = conf_measure(
-        logits=logits, 
-        hidden_states=hidden_states, 
+        logits=logits,
+        hidden_states=hidden_states,
         classifier=classifier,
     )
-    mask = torch.where(conf <= threshold, 0., 1.).bool()
-    
+    mask = torch.where(conf <= threshold, 0.0, 1.0).bool()
+
     if not return_conf:
         return mask.item()  # False (0) and True (1) denote keep and exit
     else:

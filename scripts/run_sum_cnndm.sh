@@ -44,7 +44,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python -m torch.distributed.run --nproc_per_n
     --do_eval \
     --dataset_name cnn_dailymail \
     --dataset_config_name "3.0.0" \
-    --output_dir ./save/cnndm_t5_large/new \
+    --output_dir ./results/new_3_5 \
     --per_device_eval_batch_size 1 \
     --deploy_scenario True \
     --use_synchronize True \
