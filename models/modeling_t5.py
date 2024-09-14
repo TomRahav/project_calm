@@ -679,6 +679,7 @@ class EffT5Stack(T5Stack):
                             cm_head,
                             config=self.config,
                             pos_time=past_key_value[0].shape[2] + 1 if past_key_value is not None else 1,
+                            layer_index=(i if self.config.exit_decaying_layers else 0)
                         )
                         self.block_op[i] += (skip_mask.shape[0] - skip_mask.sum().item())
 

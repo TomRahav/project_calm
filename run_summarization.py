@@ -44,7 +44,11 @@ from transformers import (
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version, is_offline_mode, send_example_telemetry
+from transformers.utils import (
+    check_min_version,
+    is_offline_mode,
+    send_example_telemetry,
+)
 from transformers.utils.versions import require_version
 
 from sum_lib import (
@@ -97,7 +101,15 @@ except (LookupError, OSError):
         nltk.download("punkt", quiet=True)
 
 
-def main(model_args, data_args, training_args, additional_args, model_cls, trainer_cls, jupyter=False):
+def main(
+    model_args,
+    data_args,
+    training_args,
+    additional_args,
+    model_cls,
+    trainer_cls,
+    jupyter=False,
+):
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
     # information sent is the one passed as arguments along with your Python/PyTorch versions.
     send_example_telemetry("run_summarization", model_args, data_args)
@@ -141,14 +153,20 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
 
     # Detecting last checkpoint.
     last_checkpoint = None
-    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
+    if (
+        os.path.isdir(training_args.output_dir)
+        and training_args.do_train
+        and not training_args.overwrite_output_dir
+    ):
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
         if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
             raise ValueError(
                 f"Output directory ({training_args.output_dir}) already exists and is not empty. "
                 "Use --overwrite_output_dir to overcome."
             )
-        elif last_checkpoint is not None and training_args.resume_from_checkpoint is None:
+        elif (
+            last_checkpoint is not None and training_args.resume_from_checkpoint is None
+        ):
             logger.info(
                 f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
@@ -202,8 +220,16 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
     # The .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
     if not additional_args.use_lora or training_args.do_train:
-        config_name = model_args.config_name if model_args.config_name else model_args.model_name_or_path
-        tokenizer_name = model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path
+        config_name = (
+            model_args.config_name
+            if model_args.config_name
+            else model_args.model_name_or_path
+        )
+        tokenizer_name = (
+            model_args.tokenizer_name
+            if model_args.tokenizer_name
+            else model_args.model_name_or_path
+        )
         model_name = model_args.model_name_or_path
     else:
         lora_config = LoraConfig.from_pretrained(model_args.model_name_or_path)
@@ -216,9 +242,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         use_auth_token=True if model_args.use_auth_token else None,
     )
     config = update_autoconfig(
-        config,
-        additional_args,
-        max_answer_length=data_args.max_target_length
+        config, additional_args, max_answer_length=data_args.max_target_length
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -227,6 +251,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         use_fast=model_args.use_fast_tokenizer,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        clean_up_tokenization_spaces=True,
     )
 
     model = model_cls.from_pretrained(
@@ -241,14 +266,18 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
     if additional_args.use_lora:
         if training_args.do_train:
             lora_config = LoraConfig(
-                task_type=TaskType.SEQ_2_SEQ_LM, r=additional_args.lora_rank, 
-                lora_alpha=additional_args.lora_alpha, lora_dropout=additional_args.lora_dropout,
+                task_type=TaskType.SEQ_2_SEQ_LM,
+                r=additional_args.lora_rank,
+                lora_alpha=additional_args.lora_alpha,
+                lora_dropout=additional_args.lora_dropout,
                 target_modules=additional_args.lora_target_modules,
             )
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
         else:
-            model = PeftModel.from_pretrained(model, model_args.model_name_or_path, config=lora_config)
+            model = PeftModel.from_pretrained(
+                model, model_args.model_name_or_path, config=lora_config
+            )
             model = model.merge_and_unload()
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
@@ -258,7 +287,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         model.resize_token_embeddings(len(tokenizer))
 
     if model.config.decoder_start_token_id is None:
-        raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
+        raise ValueError(
+            "Make sure that `config.decoder_start_token_id` is correctly defined"
+        )
 
     if (
         hasattr(model.config, "max_position_embeddings")
@@ -297,13 +328,17 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
             raise ValueError("--do_predict requires a test dataset")
         column_names = raw_datasets["test"].column_names
     else:
-        logger.info("There is nothing to do. Please pass `do_train`, `do_eval` and/or `do_predict`.")
+        logger.info(
+            "There is nothing to do. Please pass `do_train`, `do_eval` and/or `do_predict`."
+        )
         return
 
     # Get the column names for input/target.
     dataset_columns = summarization_name_mapping.get(data_args.dataset_name, None)
     if data_args.text_column is None:
-        text_column = dataset_columns[0] if dataset_columns is not None else column_names[0]
+        text_column = (
+            dataset_columns[0] if dataset_columns is not None else column_names[0]
+        )
     else:
         text_column = data_args.text_column
         if text_column not in column_names:
@@ -311,7 +346,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
                 f"--text_column' value '{data_args.text_column}' needs to be one of: {', '.join(column_names)}"
             )
     if data_args.summary_column is None:
-        summary_column = dataset_columns[1] if dataset_columns is not None else column_names[1]
+        summary_column = (
+            dataset_columns[1] if dataset_columns is not None else column_names[1]
+        )
     else:
         summary_column = data_args.summary_column
         if summary_column not in column_names:
@@ -319,7 +356,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
                 f"--summary_column' value '{data_args.summary_column}' needs to be one of: {', '.join(column_names)}"
             )
 
-    if training_args.label_smoothing_factor > 0 and not hasattr(model, "prepare_decoder_input_ids_from_labels"):
+    if training_args.label_smoothing_factor > 0 and not hasattr(
+        model, "prepare_decoder_input_ids_from_labels"
+    ):
         logger.warning(
             "label_smoothing is enabled but the `prepare_decoder_input_ids_from_labels` method is not defined for"
             f"`{model.__class__.__name__}`. This will lead to loss being calculated twice and will take up more memory"
@@ -340,16 +379,27 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
 
         padding = "max_length" if data_args.pad_to_max_length else False
 
-        model_inputs = tokenizer(inputs, max_length=data_args.max_source_length, padding=padding, truncation=True)
+        model_inputs = tokenizer(
+            inputs,
+            max_length=data_args.max_source_length,
+            padding=padding,
+            truncation=True,
+        )
 
         # Tokenize targets with the `text_target` keyword argument
-        labels = tokenizer(text_target=targets, max_length=max_target_length, padding=padding, truncation=True)
+        labels = tokenizer(
+            text_target=targets,
+            max_length=max_target_length,
+            padding=padding,
+            truncation=True,
+        )
 
         # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
         # padding in the loss.
         if padding == "max_length" and data_args.ignore_pad_token_for_loss:
             labels["input_ids"] = [
-                [(l if l != tokenizer.pad_token_id else -100) for l in label] for label in labels["input_ids"]
+                [(l if l != tokenizer.pad_token_id else -100) for l in label]
+                for label in labels["input_ids"]
             ]
 
         model_inputs["labels"] = labels["input_ids"]
@@ -376,7 +426,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         if data_args.max_eval_samples is not None:
             max_eval_samples = min(len(eval_dataset), data_args.max_eval_samples)
             eval_dataset = eval_dataset.select(range(max_eval_samples))
-        with training_args.main_process_first(desc="validation dataset map pre-processing"):
+        with training_args.main_process_first(
+            desc="validation dataset map pre-processing"
+        ):
             eval_dataset = eval_dataset.map(
                 preprocess_function,
                 batched=True,
@@ -390,9 +442,13 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         max_target_length = data_args.val_max_target_length
         predict_dataset = raw_datasets["test"]
         if data_args.max_predict_samples is not None:
-            max_predict_samples = min(len(predict_dataset), data_args.max_predict_samples)
+            max_predict_samples = min(
+                len(predict_dataset), data_args.max_predict_samples
+            )
             predict_dataset = predict_dataset.select(range(max_predict_samples))
-        with training_args.main_process_first(desc="prediction dataset map pre-processing"):
+        with training_args.main_process_first(
+            desc="prediction dataset map pre-processing"
+        ):
             predict_dataset = predict_dataset.map(
                 preprocess_function,
                 batched=True,
@@ -403,7 +459,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
             )
 
     # Data collator
-    label_pad_token_id = -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    label_pad_token_id = (
+        -100 if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    )
     data_collator = DataCollatorForSeq2Seq(
         tokenizer,
         model=model,
@@ -432,8 +490,10 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         try:
             decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
         except:
-            decoded_preds = tokenizer.batch_decode(np.where(preds != -100, preds, tokenizer.pad_token_id), 
-                                                   skip_special_tokens=True)
+            decoded_preds = tokenizer.batch_decode(
+                np.where(preds != -100, preds, tokenizer.pad_token_id),
+                skip_special_tokens=True,
+            )
         if data_args.ignore_pad_token_for_loss:
             # Replace -100 in the labels as we can't decode them.
             labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
@@ -441,15 +501,21 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         try:
             decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
         except:
-            decoded_labels = tokenizer.batch_decode(np.where(labels != -100, labels, tokenizer.pad_token_id), 
-                                                    skip_special_tokens=True)
+            decoded_labels = tokenizer.batch_decode(
+                np.where(labels != -100, labels, tokenizer.pad_token_id),
+                skip_special_tokens=True,
+            )
 
         # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-        result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+        result = metric.compute(
+            predictions=decoded_preds, references=decoded_labels, use_stemmer=True
+        )
         result = {k: round(v * 100, 4) for k, v in result.items()}
-        prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
+        prediction_lens = [
+            np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds
+        ]
         result["gen_len"] = np.mean(prediction_lens)
         return result
 
@@ -460,8 +526,10 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         else data_args.val_max_target_length
     )
     training_args.generation_num_beams = (
-        data_args.num_beams if data_args.num_beams is not None else training_args.generation_num_beams
-    )    
+        data_args.num_beams
+        if data_args.num_beams is not None
+        else training_args.generation_num_beams
+    )
     # adjust training arguments
     training_args = adjust_training_args(training_args, additional_args)
 
@@ -473,7 +541,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         eval_dataset=eval_dataset if training_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        compute_metrics=compute_metrics if training_args.predict_with_generate else None
+        compute_metrics=(
+            compute_metrics if training_args.predict_with_generate else None
+        ),
     )
 
     # Training
@@ -484,11 +554,14 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        if not additional_args.use_lora: trainer.save_model()  # Saves the tokenizer too for easy upload
+        if not additional_args.use_lora:
+            trainer.save_model()  # Saves the tokenizer too for easy upload
 
         metrics = train_result.metrics
         max_train_samples = (
-            data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
+            data_args.max_train_samples
+            if data_args.max_train_samples is not None
+            else len(train_dataset)
         )
         metrics["train_samples"] = min(max_train_samples, len(train_dataset))
 
@@ -498,14 +571,20 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
 
         if additional_args.use_lora:
             model.save_pretrained(training_args.output_dir)  # save adapter_config.json
-            model.base_model.save_pretrained(training_args.output_dir)  # save config.json
+            model.base_model.save_pretrained(
+                training_args.output_dir
+            )  # save config.json
 
     # Evaluation
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
         metrics = trainer.evaluate(metric_key_prefix="eval")
-        max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
+        max_eval_samples = (
+            data_args.max_eval_samples
+            if data_args.max_eval_samples is not None
+            else len(eval_dataset)
+        )
         metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
 
         trainer.log_metrics("eval", metrics)
@@ -517,7 +596,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         predict_results = trainer.predict(predict_dataset, metric_key_prefix="predict")
         metrics = predict_results.metrics
         max_predict_samples = (
-            data_args.max_predict_samples if data_args.max_predict_samples is not None else len(predict_dataset)
+            data_args.max_predict_samples
+            if data_args.max_predict_samples is not None
+            else len(predict_dataset)
         )
         metrics["predict_samples"] = min(max_predict_samples, len(predict_dataset))
 
@@ -527,10 +608,12 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         if trainer.is_world_process_zero():
             if training_args.predict_with_generate:
                 predictions = tokenizer.batch_decode(
-                    predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
+                    predict_results.predictions, skip_special_tokens=True
                 )
                 predictions = [pred.strip() for pred in predictions]
-                output_prediction_file = os.path.join(training_args.output_dir, "generated_predictions.txt")
+                output_prediction_file = os.path.join(
+                    training_args.output_dir, "generated_predictions.txt"
+                )
                 with open(output_prediction_file, "w") as writer:
                     writer.write("\n".join(predictions))
 
@@ -539,7 +622,9 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         kwargs["dataset_tags"] = data_args.dataset_name
         if data_args.dataset_config_name is not None:
             kwargs["dataset_args"] = data_args.dataset_config_name
-            kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            kwargs["dataset"] = (
+                f"{data_args.dataset_name} {data_args.dataset_config_name}"
+            )
         else:
             kwargs["dataset"] = data_args.dataset_name
 
@@ -559,26 +644,43 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
 
 if __name__ == "__main__":
     os.environ["WANDB_DISABLED"] = "true"
-    
+
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-    
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, Seq2SeqTrainingArguments, AdditionalArguments))
+
+    parser = HfArgumentParser(
+        (
+            ModelArguments,
+            DataTrainingArguments,
+            Seq2SeqTrainingArguments,
+            AdditionalArguments,
+        )
+    )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args, additional_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args, additional_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
     else:
-        model_args, data_args, training_args, additional_args = parser.parse_args_into_dataclasses()
-    
-    if 't5' in model_args.model_name_or_path:
+        model_args, data_args, training_args, additional_args = (
+            parser.parse_args_into_dataclasses()
+        )
+
+    if "t5" in model_args.model_name_or_path:
         if data_args.dataset_name in ["cnn_dailymail", "xsum", "samsum"]:
-            model_cls = T5ForConditionalGeneration if not additional_args.deploy_scenario \
+            model_cls = (
+                T5ForConditionalGeneration
+                if not additional_args.deploy_scenario
                 else DeployT5ForConditionalGeneration
+            )
         elif data_args.dataset_name in ["multi_news", "big_patent"]:
-            model_cls = LongT5ForConditionalGeneration if not additional_args.deploy_scenario \
+            model_cls = (
+                LongT5ForConditionalGeneration
+                if not additional_args.deploy_scenario
                 else DeployLongT5ForConditionalGeneration
+            )
     else:
         raise NotImplemented
 

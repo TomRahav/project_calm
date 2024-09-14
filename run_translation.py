@@ -177,7 +177,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
     else:
         lora_config = LoraConfig.from_pretrained(model_args.model_name_or_path)
         config_name = tokenizer_name = model_name = lora_config.base_model_name_or_path
-        
+
     config = AutoConfig.from_pretrained(
         config_name,
         cache_dir=model_args.cache_dir,
@@ -189,15 +189,16 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         additional_args,
         max_answer_length=data_args.max_target_length
     )
-    
+
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         cache_dir=model_args.cache_dir,
         use_fast=model_args.use_fast_tokenizer,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
+        clean_up_tokenization_spaces=True,
     )
-    
+
     model = model_cls.from_pretrained(
         model_name,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -206,7 +207,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-        
+
     if additional_args.use_lora:
         if training_args.do_train:
             lora_config = LoraConfig(
@@ -261,10 +262,20 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         inputs = [ex[source_lang] for ex in examples["translation"]]
         targets = [ex[target_lang] for ex in examples["translation"]]
         inputs = [prefix + inp for inp in inputs]
-        model_inputs = tokenizer(inputs, max_length=data_args.max_source_length, padding=padding, truncation=True)
+        model_inputs = tokenizer(
+            inputs,
+            max_length=data_args.max_source_length,
+            padding=padding,
+            truncation=True,
+        )
 
         # Tokenize targets with the `text_target` keyword argument
-        labels = tokenizer(text_target=targets, max_length=max_target_length, padding=padding, truncation=True)
+        labels = tokenizer(
+            text_target=targets,
+            max_length=max_target_length,
+            padding=padding,
+            truncation=True,
+        )
 
         # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore
         # padding in the loss.
@@ -455,7 +466,7 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         if trainer.is_world_process_zero():
             if training_args.predict_with_generate:
                 predictions = tokenizer.batch_decode(
-                    predict_results.predictions, skip_special_tokens=True, clean_up_tokenization_spaces=True
+                    predict_results.predictions, skip_special_tokens=True
                 )
                 predictions = [pred.strip() for pred in predictions]
                 output_prediction_file = os.path.join(training_args.output_dir, "generated_predictions.txt")
@@ -479,12 +490,12 @@ def main(model_args, data_args, training_args, additional_args, model_cls, train
         trainer.push_to_hub(**kwargs)
     else:
         trainer.create_model_card(**kwargs)
-    
+
     if not jupyter:
         return results
     else:
         return trainer
-    
+
 if __name__ == "__main__":
     os.environ["WANDB_DISABLED"] = "true"
     
