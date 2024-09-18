@@ -38,7 +38,7 @@
     # --shallow_exit_layer 8 \ # for FREE
 
 #OMP_NUM_THREADS=4 ,6,7,8,9,10,11,12,13,14
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6 python -m torch.distributed.run --nproc_per_node=7 \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5 python -m torch.distributed.run --nproc_per_node=6 \
     run_summarization.py \
     --model_name_or_path ./save/cnndm_t5_large \
     --do_eval \

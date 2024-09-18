@@ -68,7 +68,7 @@ def get_skip_mask(
                 * config.exit_conf_threshold
                 * np.exp(-config.exit_layers_temp * j / config.num_layers)
                 / 10
-                + 5 * config.exit_conf_threshold / 10
+                + 6 * config.exit_conf_threshold / 10
             )
             threshold = correct_by_pos(pos_time, layer_index)
         else:
