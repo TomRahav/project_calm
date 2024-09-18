@@ -105,7 +105,11 @@ class AdditionalArguments:
         default=False,
         metadata={"help": ("Flag to use the decaying layers lambda")},
     )
-
+    calibration: Optional[bool] = field(
+        default=False,
+        metadata={"help": ("Flag to do calibration")},
+    )
+    # [tomr] end
     # shallow-deep framework
     use_shallow_deep: Optional[bool] = field(
         default=False,
@@ -232,6 +236,7 @@ def update_autoconfig(config, additional_args, **kwargs):
         "max_answer_length": kwargs.get("max_answer_length", None),
         "exit_layers_temp": additional_args.exit_layers_temp,
         "exit_decaying_layers": additional_args.exit_decaying_layers,
+        "calibration": additional_args.calibration,
     }
     config.update(early_exit_config)
 
