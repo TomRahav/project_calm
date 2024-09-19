@@ -37,13 +37,13 @@
     # --lora_target_modules 'q' 'k' 'v' 'o' 'wi' 'wo' \
     # --shallow_exit_layer 8 \ # for FREE
 
-OMP_NUM_THREADS=4 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.run --nproc_per_node=4 \
+OMP_NUM_THREADS=4 CUDA_VISIBLE_DEVICES=0,1,2 python -m torch.distributed.run --nproc_per_node=3 \
     run_summarization.py \
     --model_name_or_path ./save/cnndm_t5_large \
     --do_eval \
     --dataset_name cnn_dailymail \
     --dataset_config_name "3.0.0" \
-    --output_dir ./results/cnndm_t5_large/3_6_0.9 \
+    --output_dir ./results/cnndm_t5_large/3_6_0.6 \
     --per_device_eval_batch_size 1 \
     --deploy_scenario True \
     --use_synchronize True \
@@ -52,7 +52,7 @@ OMP_NUM_THREADS=4 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.run -
     --source_prefix "summarize: " \
     --use_early_exit True \
     --exit_conf_type softmax \
-    --exit_conf_threshold 0.9 \
+    --exit_conf_threshold 0.7 \
     --exit_min_layer 4 \
     --exit_decaying_layers True \
 
