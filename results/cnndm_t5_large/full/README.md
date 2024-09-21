@@ -39,9 +39,9 @@ The following hyperparameters were used during training:
 - eval_batch_size: 1
 - seed: 42
 - distributed_type: multi-GPU
-- num_devices: 4
-- total_train_batch_size: 32
-- total_eval_batch_size: 4
+- num_devices: 2
+- total_train_batch_size: 16
+- total_eval_batch_size: 2
 - optimizer: Adam with betas=(0.9,0.999) and epsilon=1e-08
 - lr_scheduler_type: linear
 - num_epochs: 3.0
