@@ -44,14 +44,14 @@ def calibrate(
 
 # Calibrating early using the algorithm
 lambda_min = calibrate(
-    losses=[40.2458, 40.0091, 39.7386, 39.237],
-    candidate_thresholds=[0.9, 0.8, 0.7, 0.6],
+    losses=[40.2458, 40.0091, 39.7386, 39.237, 38.6828, 37.8713],
+    candidate_thresholds=[0.9, 0.8, 0.7, 0.6, 0.5, 0.4],
 )
 print(f"Calibrated λ_min for early: {lambda_min}")
 
 # Calibrating early using the algorithm
 lambda_min = calibrate(
-    losses=[40.151, 40.0149, 39.5224, 39.1374],
-    candidate_thresholds=[0.9, 0.8, 0.7, 0.6],
+    losses=[40.151, 40.0149, 39.5224, 39.1374, 38.4574, 37.7045],
+    candidate_thresholds=[0.9, 0.8, 0.7, 0.6, 0.5, 0.4],
 )
 print(f"Calibrated λ_min for 3_6: {lambda_min}")
