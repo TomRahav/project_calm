@@ -22,19 +22,19 @@ def calibrate(
     """
     # Initialize λ_min to 1 as per the pseudocode
     lambda_min = 1
+    full_model_loss = 40.8814
     # Iterate over each candidate threshold λ in decreasing order
     for i, lambda_j in enumerate(candidate_thresholds):
         # Estimate the expectation of the loss E_hat(λ_j)
         E_hat_lambda_j = (
-            40.8814 - losses[i]
-        ) / 100  # Assuming `losses` is a dict mapping λ to loss values
+            full_model_loss - losses[i]
+        ) / full_model_loss  # Assuming `losses` is a dict mapping λ to loss values
 
         # Compute the p-value based on Hoeffding's inequality
         p_j = np.exp(-2 * num_samples * (max(0, delta - E_hat_lambda_j)) ** 2)
 
         # If p_j exceeds the tolerance ε, update and return λ_min
         if p_j > epsilon:
-            print("a")
             return lambda_min
         lambda_min = lambda_j
 
